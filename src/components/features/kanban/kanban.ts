@@ -27,6 +27,7 @@ import {
 	isProjectReadonly,
 } from "@/utils/task/task-operations";
 import { getTaskStatusConfig } from "@/utils/status-cycle-resolver";
+import { coalescePriority } from "@/utils/task/priority-utils";
 
 export interface KanbanSortOption {
 	field:
@@ -1040,8 +1041,8 @@ export class KanbanComponent extends Component {
 
 		switch (field) {
 			case "priority":
-				const priorityA = metadataA.priority ?? 0;
-				const priorityB = metadataB.priority ?? 0;
+				const priorityA = coalescePriority(metadataA.priority);
+				const priorityB = coalescePriority(metadataB.priority);
 				comparison = priorityA - priorityB;
 				break;
 			case "dueDate":

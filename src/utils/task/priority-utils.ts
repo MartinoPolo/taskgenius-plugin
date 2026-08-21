@@ -3,6 +3,26 @@
  */
 
 /**
+ * Sort value for a task with no (or zero/invalid) priority.
+ * Sits between medium (3) and high (4) so unset-priority tasks sort just below
+ * high rather than being pushed to the end of the list.
+ */
+export const NO_PRIORITY_SORT_VALUE = 3.5;
+
+/**
+ * Coalesces a raw priority value into a numeric sort value. A missing, zero, or
+ * non-numeric priority becomes {@link NO_PRIORITY_SORT_VALUE} (3.5), so that in
+ * descending order tasks read: highest -> high -> (no priority) -> medium -> low
+ * -> lowest, and ascending is the mirror.
+ */
+export function coalescePriority(raw: unknown): number {
+	if (typeof raw === "number" && raw > 0) {
+		return raw;
+	}
+	return NO_PRIORITY_SORT_VALUE;
+}
+
+/**
  * Sanitizes a priority value to make it safe for use in CSS class names.
  * Removes spaces and special characters that are invalid in CSS tokens.
  * 

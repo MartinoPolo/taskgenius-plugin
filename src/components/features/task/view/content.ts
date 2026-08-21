@@ -25,6 +25,7 @@ import "@/styles/group-by.css";
 
 // @ts-ignore
 import { filterTasks } from "@/utils/task/task-filter-utils";
+import { coalescePriority } from "@/utils/task/priority-utils";
 import { sortTasks } from "@/commands/sortTaskCommands"; // 导入 sortTasks 函数
 import { TaskSelectionManager } from "@/components/features/task/selection/TaskSelectionManager";
 import { GroupByDimension, TaskGroup } from "@/types/groupBy";
@@ -842,9 +843,9 @@ export class ContentComponent extends Component {
 				const completedB = b.completed;
 				if (completedA !== completedB) return completedA ? 1 : -1;
 
-				// Access priority from metadata
-				const prioA = a.metadata.priority ?? 0;
-				const prioB = b.metadata.priority ?? 0;
+				// Access priority from metadata (missing sorts as medium-ish)
+				const prioA = coalescePriority(a.metadata.priority);
+				const prioB = coalescePriority(b.metadata.priority);
 				if (prioA !== prioB) return prioB - prioA;
 
 				// Access due date from metadata

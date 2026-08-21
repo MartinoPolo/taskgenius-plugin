@@ -4,6 +4,7 @@ import { TreeNode, TableRow, TableCell, TableColumn } from "./TableTypes";
 import { SortCriterion } from "@/common/setting-definition";
 import { sortTasks } from "@/commands/sortTaskCommands";
 import { t } from "@/translations/helper";
+import { coalescePriority } from "@/utils/task/priority-utils";
 
 /**
  * Tree manager component responsible for handling hierarchical task display
@@ -188,9 +189,10 @@ export class TreeManager extends Component {
 	 */
 	private fallbackSort(tasks: Task[]): Task[] {
 		return [...tasks].sort((a, b) => {
-			// 优先级比较（高优先级在前）
+			// 优先级比较（高优先级在前；缺失优先级按中等偏上排序）
 			const priorityDiff =
-				(b.metadata.priority ?? 0) - (a.metadata.priority ?? 0);
+				coalescePriority(b.metadata.priority) -
+				coalescePriority(a.metadata.priority);
 			if (priorityDiff !== 0) {
 				return priorityDiff;
 			}

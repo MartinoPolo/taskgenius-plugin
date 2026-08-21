@@ -22,6 +22,7 @@ import {
 } from "../types/task";
 import { isSupportedFileWithFilter } from "../utils/file/file-type-detector";
 import { FileFilterManager } from "../managers/file-filter-manager";
+import { coalescePriority } from "../utils/task/priority-utils";
 
 /**
  * Utility to format a date for index keys (YYYY-MM-DD)
@@ -1014,9 +1015,9 @@ export class TaskIndexer extends Component implements TaskIndexerInterface {
 		if (sortBy.length === 0) {
 			// Default sorting: priority desc, due date asc
 			return [...tasks].sort((a, b) => {
-				// First by priority (high to low)
-				const priorityA = a.metadata.priority || 0;
-				const priorityB = b.metadata.priority || 0;
+				// First by priority (high to low; missing sorts as medium-ish)
+				const priorityA = coalescePriority(a.metadata.priority);
+				const priorityB = coalescePriority(b.metadata.priority);
 				if (priorityA !== priorityB) {
 					return priorityB - priorityA;
 				}

@@ -10,6 +10,7 @@ import {
 } from "../common/setting-definition";
 import { t } from "../translations/helper";
 import { getTaskStatusConfig } from "../utils/status-cycle-resolver";
+import { coalescePriority } from "../utils/task/priority-utils";
 
 // Task statuses (aligned with common usage and sorting needs)
 export enum SortableTaskStatus {
@@ -351,29 +352,14 @@ function compareTasks<
 
 		priority: (a: T, b: T, order: "asc" | "desc") => {
 			// Priority comparison: higher number means higher priority (1=Lowest, 5=Highest)
-			const valA = getField(a, "priority");
-			const valB = getField(b, "priority");
-			const aHasPriority =
-				valA !== undefined && valA !== null && valA > 0;
-			const bHasPriority =
-				valB !== undefined && valB !== null && valB > 0;
+			// Missing/zero priority coalesces to 3.5 (between medium=3 and high=4)
+			// so unset-priority tasks sort just below high rather than at the end.
+			// Descending then reads: highest -> high -> (no priority) -> medium -> low -> lowest.
+			const valA = coalescePriority(getField(a, "priority"));
+			const valB = coalescePriority(getField(b, "priority"));
 
-			// Handle null/empty values - empty values should always go to the end
-			if (!aHasPriority && !bHasPriority) {
-				return 0; // Both lack priority
-			} else if (!aHasPriority) {
-				// A lacks priority - no priority tasks go to the end
-				return 1;
-			} else if (!bHasPriority) {
-				// B lacks priority - no priority tasks go to the end
-				return -1;
-			} else {
-				// Both have numeric priorities - simple numeric comparison
-				// For asc: 1, 2, 3, 4, 5 (Low to High)
-				// For desc: 5, 4, 3, 2, 1 (High to Low)
-				const comparison = (valA as number) - (valB as number);
-				return order === "asc" ? comparison : -comparison;
-			}
+			const comparison = valA - valB;
+			return order === "asc" ? comparison : -comparison;
 		},
 
 		dueDate: (a: T, b: T, order: "asc" | "desc") => {

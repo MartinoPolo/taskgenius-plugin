@@ -17,7 +17,10 @@ import { t } from "@/translations/helper";
 import TaskProgressBarPlugin from "@/index";
 import { InlineEditor, InlineEditorOptions } from "./InlineEditor";
 import { InlineEditorManager } from "./InlineEditorManager";
-import { sanitizePriorityForClass } from "@/utils/task/priority-utils";
+import {
+	sanitizePriorityForClass,
+	coalescePriority,
+} from "@/utils/task/priority-utils";
 import { sortTasks } from "@/commands/sortTaskCommands";
 import { TaskSelectionManager } from "@/components/features/task/selection/TaskSelectionManager";
 import { showBulkOperationsMenu } from "./BulkOperationsMenu";
@@ -1369,8 +1372,8 @@ export class TaskTreeItemComponent extends Component {
 				const completedB = b.completed;
 				if (completedA !== completedB) return completedA ? 1 : -1;
 
-				const prioA = a.metadata.priority ?? 0;
-				const prioB = b.metadata.priority ?? 0;
+				const prioA = coalescePriority(a.metadata.priority);
+				const prioB = coalescePriority(b.metadata.priority);
 				if (prioA !== prioB) return prioB - prioA;
 
 				const dueA = a.metadata.dueDate ?? Infinity;
