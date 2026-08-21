@@ -510,65 +510,40 @@ export function groupTasksByDueDate(tasks: Task[]): TaskGroup[] {
  * Group tasks by priority level
  */
 export function groupTasksByPriority(tasks: Task[]): TaskGroup[] {
-	const highPriority: Task[] = [];
-	const mediumPriority: Task[] = [];
-	const lowPriority: Task[] = [];
-	const noPriority: Task[] = [];
+	// Task Genius stores priority on a 1-5 scale (5=highest … 1=lowest, 0/undefined=none;
+	// see PRIORITY_MAP). The original bucketing assumed a 1-3 scale, so it mislabelled
+	// medium as High / low as Medium and dropped highest & high into No Priority. Bucket
+	// each level into its own group so labels match the parsed priority.
+	const buckets: Record<number, Task[]> = { 5: [], 4: [], 3: [], 2: [], 1: [], 0: [] };
 
 	tasks.forEach((task) => {
 		const priority = task.metadata.priority || 0;
-		if (priority === 3) {
-			highPriority.push(task);
-		} else if (priority === 2) {
-			mediumPriority.push(task);
-		} else if (priority === 1) {
-			lowPriority.push(task);
-		} else {
-			noPriority.push(task);
-		}
+		(buckets[priority] ?? buckets[0]).push(task);
 	});
+
+	// Ordered highest → lowest, with no-priority last.
+	const levels: { priority: number; title: string; key: string }[] = [
+		{ priority: 5, title: t("Highest Priority"), key: "priority-highest" },
+		{ priority: 4, title: t("High Priority"), key: "priority-high" },
+		{ priority: 3, title: t("Medium Priority"), key: "priority-medium" },
+		{ priority: 2, title: t("Low Priority"), key: "priority-low" },
+		{ priority: 1, title: t("Lowest Priority"), key: "priority-lowest" },
+		{ priority: 0, title: t("No Priority"), key: "priority-none" },
+	];
 
 	const groups: TaskGroup[] = [];
 	let sortOrder = 0;
-
-	if (highPriority.length > 0) {
-		groups.push({
-			title: t("High Priority"),
-			key: "priority-high",
-			sortOrder: sortOrder++,
-			tasks: highPriority,
-			isExpanded: true,
-		});
-	}
-
-	if (mediumPriority.length > 0) {
-		groups.push({
-			title: t("Medium Priority"),
-			key: "priority-medium",
-			sortOrder: sortOrder++,
-			tasks: mediumPriority,
-			isExpanded: true,
-		});
-	}
-
-	if (lowPriority.length > 0) {
-		groups.push({
-			title: t("Low Priority"),
-			key: "priority-low",
-			sortOrder: sortOrder++,
-			tasks: lowPriority,
-			isExpanded: true,
-		});
-	}
-
-	if (noPriority.length > 0) {
-		groups.push({
-			title: t("No Priority"),
-			key: "priority-none",
-			sortOrder: sortOrder++,
-			tasks: noPriority,
-			isExpanded: true,
-		});
+	for (const level of levels) {
+		const bucket = buckets[level.priority];
+		if (bucket.length > 0) {
+			groups.push({
+				title: level.title,
+				key: level.key,
+				sortOrder: sortOrder++,
+				tasks: bucket,
+				isExpanded: true,
+			});
+		}
 	}
 
 	return groups;
