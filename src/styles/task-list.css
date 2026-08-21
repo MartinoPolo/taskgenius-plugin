@@ -291,7 +291,10 @@
 .task-item.tree-task-item .add-priority-btn {
 	position: absolute;
 	right: var(--size-4-2);
-	top: var(--size-4-2);
+	/* Vertically center the priority element within the row instead of pinning it
+	   to a fixed top offset, so it aligns across rows of differing heights. */
+	top: 50%;
+	transform: translateY(-50%);
 }
 
 /* New field styles */

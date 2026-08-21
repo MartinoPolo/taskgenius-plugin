@@ -49,6 +49,16 @@
 	padding-top: var(--size-2-2);
 }
 
+/* Childless tree rows omit the .task-expand-toggle element entirely, which would
+   shift their checkbox left by the toggle's width plus the row gap. Reserve that
+   gutter on rows without a toggle so every checkbox column-aligns regardless of
+   whether the row has children. Toggle width (16px) + row flex gap (6px). */
+.task-item.tree-task-item
+	> div:first-of-type:not(:has(> .task-expand-toggle))
+	.task-checkbox {
+	margin-left: calc(16px + 6px);
+}
+
 .task-item .task-checkbox {
 	padding-top: var(--size-2-2);
 }
