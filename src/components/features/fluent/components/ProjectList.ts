@@ -19,6 +19,7 @@ export interface Project {
 	displayName?: string;
 	color: string;
 	taskCount: number;
+	openCount: number;
 	createdAt?: number;
 	updatedAt?: number;
 	isVirtual?: boolean; // Flag for intermediate nodes
@@ -141,6 +142,23 @@ export class ProjectList extends Component {
 		this.containerEl.empty();
 	}
 
+	/**
+	 * A task is "open" when it is neither completed nor abandoned.
+	 * In-progress tasks count as open. Abandoned marks come from the configured
+	 * abandoned status set (default "-").
+	 */
+	private isTaskOpen(task: Task): boolean {
+		if (task.completed) return false;
+		const abandonedMarks = String(
+			this.plugin.settings.taskStatuses?.abandoned || "-",
+		)
+			.split("|")
+			.map((mark) => mark.toLowerCase());
+		const status = (task.status || "").toLowerCase();
+		if (status && abandonedMarks.includes(status)) return false;
+		return true;
+	}
+
 	private async loadProjects() {
 		let tasks: Task[] = [];
 		if (this.plugin.dataflowOrchestrator) {
@@ -169,11 +187,15 @@ export class ProjectList extends Component {
 					displayName: displayName,
 					color: this.generateColorForProject(projectId),
 					taskCount: 0,
+					openCount: 0,
 				});
 			}
 			const project = projectMap.get(projectId);
 			if (project) {
 				project.taskCount++;
+				if (this.isTaskOpen(task)) {
+					project.openCount++;
+				}
 			}
 		});
 
@@ -303,6 +325,7 @@ export class ProjectList extends Component {
 									currentPath,
 								),
 								taskCount: 0,
+								openCount: 0,
 								isVirtual: true,
 							};
 
@@ -419,18 +442,25 @@ export class ProjectList extends Component {
 		nodes.forEach((node) => {
 			if (node.children.length > 0) {
 				this.updateParentTaskCounts(node.children);
-				// Sum up child task counts
+				// Sum up child task counts (both total and open)
 				const childTotal = node.children.reduce(
 					(sum, child) => sum + child.project.taskCount,
+					0,
+				);
+				const childOpen = node.children.reduce(
+					(sum, child) => sum + child.project.openCount,
 					0,
 				);
 				// For virtual nodes, set count to child total
 				// For real nodes, add child total to existing count
 				if (node.project.isVirtual) {
 					node.project.taskCount = childTotal;
+					node.project.openCount = childOpen;
 				} else {
 					node.project.taskCount =
 						node.project.taskCount + childTotal;
+					node.project.openCount =
+						node.project.openCount + childOpen;
 				}
 			}
 		});
@@ -627,7 +657,14 @@ export class ProjectList extends Component {
 
 		const projectCount = projectItem.createSpan({
 			cls: "fluent-project-count",
-			text: String(project.taskCount),
+		});
+		projectCount.createSpan({
+			cls: "tg-project-count-open",
+			text: String(project.openCount),
+		});
+		projectCount.createSpan({
+			cls: "tg-project-count-total",
+			text: `/${project.taskCount}`,
 		});
 
 		this.registerDomEvent(projectItem, "click", (e: MouseEvent) => {
@@ -813,6 +850,7 @@ export class ProjectList extends Component {
 						customProject.displayName || customProject.name,
 					color: customProject.color,
 					taskCount: 0, // Will be updated by task counting
+					openCount: 0, // Will be updated by task counting
 					createdAt: customProject.createdAt,
 					updatedAt: customProject.updatedAt,
 				});

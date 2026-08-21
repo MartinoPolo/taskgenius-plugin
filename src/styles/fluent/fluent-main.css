@@ -301,6 +301,15 @@ button.fluent-new-task-btn:hover {
 	color: var(--text-muted);
 }
 
+/* Open/total task counter: open count in normal color, total (with slash) faint. */
+.tg-project-count-open {
+	color: var(--text-normal);
+}
+
+.tg-project-count-total {
+	color: var(--text-faint);
+}
+
 /* Tree View Styles */
 .fluent-project-list.is-tree-view .fluent-project-item {
 	transition: all 0.15s ease;
