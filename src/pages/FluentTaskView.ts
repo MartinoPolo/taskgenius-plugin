@@ -578,52 +578,10 @@ export class FluentTaskView extends ItemView {
 				this.currentViewId = viewId;
 				console.log(`[Task Genius] currentViewId updated to: ${this.currentViewId}`);
 
-				// When navigating to projects view directly, clear project selection
-				// This enables the full project overview mode
-				if (viewId === "projects") {
-					console.log(
-						"[Task Genius] Navigating to projects overview - clearing project selection"
-					);
-					this.viewState.selectedProject = undefined;
-
-					// Clear project filter from filter state
-					try {
-						if (this.liveFilterState) {
-							const nextState = { ...this.liveFilterState };
-							nextState.filterGroups = (
-								nextState.filterGroups || []
-							)
-								.map((g: any) => ({
-									...g,
-									filters: (g.filters || []).filter(
-										(f: any) => f.property !== "project"
-									),
-								}))
-								.filter(
-									(g: any) =>
-										g.filters && g.filters.length > 0
-								);
-
-							this.liveFilterState = nextState as any;
-							this.currentFilterState = nextState as any;
-							this.app.saveLocalStorage(
-								"task-genius-view-filter",
-								nextState
-							);
-
-							// Broadcast filter change
-							this.app.workspace.trigger(
-								"task-genius:filter-changed",
-								nextState
-							);
-						}
-					} catch (e) {
-						console.warn(
-							"[Task Genius] Failed to clear project filter",
-							e
-						);
-					}
-				}
+				// Switching to a different view resets the active project selection and
+				// any ad-hoc filters, so the target view opens with its own scope instead
+				// of inheriting the previously-selected project.
+				this.clearProjectSelectionAndFilters();
 
 				// Recompute filtered tasks for the newly selected view so all modes stay in sync
 				this.filteredTasks = this.dataManager.applyFilters(this.tasks);
@@ -1114,6 +1072,9 @@ export class FluentTaskView extends ItemView {
 							payload.selectionId
 						) {
 							this.currentViewId = payload.selectionId;
+							// Match the in-view navigation path: reset project/filter
+							// scope when switching views via the side-leaf sidebar.
+							this.clearProjectSelectionAndFilters();
 							this.filteredTasks = this.dataManager.applyFilters(
 								this.tasks
 							);
@@ -1238,25 +1199,10 @@ export class FluentTaskView extends ItemView {
 	private resetCurrentFilter(): void {
 		console.log("[Task Genius] Resetting filter");
 
-		// Clear filter states
-		this.liveFilterState = null;
-		this.currentFilterState = null;
-		this.viewState.selectedProject = undefined; // keep project state in sync when clearing via UI
-
-		// Clear localStorage
-		this.app.saveLocalStorage("task-genius-view-filter", null);
+		this.clearProjectSelectionAndFilters();
 
 		// Save the cleared filter state to workspace
 		this.workspaceStateManager.saveFilterStateToWorkspace();
-
-		// Broadcast filter change to ensure UI components update
-		this.app.workspace.trigger("task-genius:filter-changed", {
-			rootCondition: "all",
-			filterGroups: [],
-		} as any);
-
-		// Clear any active project selection in sidebar
-		this.layoutManager.setActiveProject(null);
 
 		// Re-apply filters (which will now be empty) and update view
 		this.filteredTasks = this.dataManager.applyFilters(this.tasks);
@@ -1264,6 +1210,31 @@ export class FluentTaskView extends ItemView {
 
 		// Update action buttons (to remove Reset Filter button)
 		this.layoutManager.updateActionButtons();
+	}
+
+	/**
+	 * Clear the active project selection and all ad-hoc filters without
+	 * re-rendering. Callers recompute filteredTasks and call updateView()
+	 * themselves. Shared by the filter-reset button and by view navigation,
+	 * which resets scope so a newly-opened view is not narrowed to the
+	 * previously-selected project. View-level filterRules (data.json) are
+	 * applied separately in applyFilters and are unaffected.
+	 */
+	private clearProjectSelectionAndFilters(): void {
+		this.liveFilterState = null;
+		this.currentFilterState = null;
+		this.viewState.selectedProject = undefined;
+
+		this.app.saveLocalStorage("task-genius-view-filter", null);
+
+		// Broadcast filter change to ensure UI components update
+		this.app.workspace.trigger("task-genius:filter-changed", {
+			rootCondition: "all",
+			filterGroups: [],
+		} as any);
+
+		// Clear any active project selection highlight in sidebar
+		this.layoutManager.setActiveProject(null);
 	}
 
 	/**
