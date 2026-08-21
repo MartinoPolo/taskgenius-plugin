@@ -291,10 +291,10 @@
 .task-item.tree-task-item .add-priority-btn {
 	position: absolute;
 	right: var(--size-4-2);
-	/* Vertically center the priority element within the row instead of pinning it
-	   to a fixed top offset, so it aligns across rows of differing heights. */
-	top: 50%;
-	transform: translateY(-50%);
+	/* Pin the priority element to the top of the row. On an expanded parent whose
+	   row box spans its whole subtree, vertical-centering pushed the icon down into
+	   the middle of the children, which read as belonging to a subtask. */
+	top: var(--size-4-2);
 }
 
 /* New field styles */
