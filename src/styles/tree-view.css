@@ -36,17 +36,16 @@
 .tree-task-item > div:first-of-type {
 	width: 100%;
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: 6px;
+	/* Anchor the absolutely-positioned priority icon to THIS row (the parent's own
+	   line) rather than to .tree-task-item, whose box spans the whole subtree. */
+	position: relative;
 }
 
 /* Indentation for hierarchy */
 .task-indent {
 	flex-shrink: 0;
-}
-
-.task-item.tree-task-item .task-expand-toggle {
-	padding-top: var(--size-2-2);
 }
 
 /* Childless tree rows omit the .task-expand-toggle element entirely, which would
@@ -57,10 +56,6 @@
 	> div:first-of-type:not(:has(> .task-expand-toggle))
 	.task-checkbox {
 	margin-left: calc(16px + 6px);
-}
-
-.task-item .task-checkbox {
-	padding-top: var(--size-2-2);
 }
 
 /* Expand/collapse toggle */

@@ -7,7 +7,7 @@
 
 .task-item {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	padding: 8px 16px;
 	/* border-bottom: 1px solid var(--background-modifier-border); */
 	cursor: pointer;
@@ -291,10 +291,12 @@
 .task-item.tree-task-item .add-priority-btn {
 	position: absolute;
 	right: var(--size-4-2);
-	/* Pin the priority element to the top of the row. On an expanded parent whose
-	   row box spans its whole subtree, vertical-centering pushed the icon down into
-	   the middle of the children, which read as belonging to a subtask. */
-	top: var(--size-4-2);
+	/* Vertically center within the parent's OWN row, not the whole subtree.
+	   The anchor is .task-parent-container (position:relative in tree-view.css),
+	   whose height is just the parent line — so centering here can't push the icon
+	   down into the children the way anchoring to .tree-task-item did. */
+	top: 50%;
+	transform: translateY(-50%);
 }
 
 /* New field styles */
