@@ -150,11 +150,9 @@ export class QuadrantCardComponent extends Component {
 				const tagEl = tagsEl.createSpan("tg-quadrant-card-tag");
 				tagEl.textContent = tag;
 
-				// Add special styling for urgent/important tags
-				if (tag === "#urgent") {
-					tagEl.addClass("tg-quadrant-tag--urgent");
-				} else if (tag === "#important") {
-					tagEl.addClass("tg-quadrant-tag--important");
+				// Add special styling for the #quick size marker
+				if (tag.toLowerCase() === "#quick") {
+					tagEl.addClass("tg-quadrant-tag--quick");
 				}
 			});
 		}
@@ -296,46 +294,46 @@ export class QuadrantCardComponent extends Component {
 
 		menu.addSeparator();
 
-		// Check if task already has urgent or important tags (check both content and metadata)
-		const hasUrgentTag =
-			this.task.content.includes("#urgent") ||
-			this.task.metadata.tags?.includes("#urgent");
-		const hasImportantTag =
-			this.task.content.includes("#important") ||
-			this.task.metadata.tags?.includes("#important");
-
-		if (!hasUrgentTag) {
-			menu.addItem((item) => {
-				item.setTitle(t("Mark as urgent"))
-					.setIcon("zap")
-					.onClick(() => {
-						this.addTagToTask("#urgent");
-					});
-			});
-		} else {
-			menu.addItem((item) => {
-				item.setTitle(t("Remove urgent tag"))
-					.setIcon("zap-off")
-					.onClick(() => {
-						this.removeTagFromTask("#urgent");
-					});
-			});
-		}
-
-		if (!hasImportantTag) {
+		// Importance axis is driven by priority (high/highest => important).
+		const isImportant = this.getNumericPriority() >= 4;
+		if (!isImportant) {
 			menu.addItem((item) => {
 				item.setTitle(t("Mark as important"))
 					.setIcon("star")
 					.onClick(() => {
-						this.addTagToTask("#important");
+						this.setTaskPriority(4); // High
 					});
 			});
 		} else {
 			menu.addItem((item) => {
-				item.setTitle(t("Remove important tag"))
+				item.setTitle(t("Mark as not important"))
 					.setIcon("star-off")
 					.onClick(() => {
-						this.removeTagFromTask("#important");
+						this.setTaskPriority(3); // Medium (below high)
+					});
+			});
+		}
+
+		// Size axis is driven by the #quick marker (small vs. large).
+		const isSmall =
+			this.task.content.toLowerCase().includes("#quick") ||
+			this.task.metadata.tags?.some(
+				(tag) => tag.toLowerCase() === "#quick"
+			);
+		if (!isSmall) {
+			menu.addItem((item) => {
+				item.setTitle(t("Mark as quick (small)"))
+					.setIcon("zap")
+					.onClick(() => {
+						this.addTagToTask("#quick");
+					});
+			});
+		} else {
+			menu.addItem((item) => {
+				item.setTitle(t("Remove quick (make large)"))
+					.setIcon("zap-off")
+					.onClick(() => {
+						this.removeTagFromTask("#quick");
 					});
 			});
 		}
@@ -391,6 +389,61 @@ export class QuadrantCardComponent extends Component {
 		} catch (error) {
 			console.error(
 				`Failed to add tag ${tag} to task ${this.task.id}:`,
+				error,
+			);
+		}
+	}
+
+	/**
+	 * Resolve the task's numeric priority (1-5), from metadata first, then
+	 * from priority emojis in the content, or 0 when unset.
+	 */
+	private getNumericPriority(): number {
+		// Typed as number, but user data can carry a string priority label at
+		// runtime; widen to unknown so both shapes are handled defensively.
+		const priority: unknown = this.task.metadata?.priority;
+		if (typeof priority === "number") {
+			return priority;
+		}
+		if (typeof priority === "string") {
+			switch (priority.toLowerCase()) {
+				case "lowest":
+					return 1;
+				case "low":
+					return 2;
+				case "medium":
+					return 3;
+				case "high":
+					return 4;
+				case "highest":
+					return 5;
+				default:
+					return parseInt(priority, 10) || 0;
+			}
+		}
+		const content = this.task.content || "";
+		if (content.includes("🔺")) return 5;
+		if (content.includes("⏫")) return 4;
+		if (content.includes("🔼")) return 3;
+		if (content.includes("🔽")) return 2;
+		if (content.includes("⏬")) return 1;
+		return 0;
+	}
+
+	private async setTaskPriority(priority: number) {
+		try {
+			const updatedTask = {
+				...this.task,
+				metadata: { ...this.task.metadata, priority },
+			};
+			this.task = updatedTask;
+			this.render();
+			if (this.params.onTaskUpdated) {
+				await this.params.onTaskUpdated(updatedTask);
+			}
+		} catch (error) {
+			console.error(
+				`Failed to set priority ${priority} on task ${this.task.id}:`,
 				error,
 			);
 		}

@@ -841,14 +841,14 @@ export class QuadrantColumnComponent extends Component {
 
 	private getEmptyStateMessage(): string {
 		switch (this.quadrant.id) {
-			case "urgent-important":
-				return t("No crisis tasks - great job!");
-			case "not-urgent-important":
-				return t("No planning tasks - consider adding some goals");
-			case "urgent-not-important":
-				return t("No interruptions - focus time!");
-			case "not-urgent-not-important":
-				return t("No time wasters - excellent focus!");
+			case "important-large":
+				return t("No big important tasks - great job!");
+			case "important-small":
+				return t("No quick important tasks right now");
+			case "not-important-large":
+				return t("No big low-priority tasks");
+			case "not-important-small":
+				return t("No quick low-priority tasks");
 			default:
 				return t("No tasks in this quadrant");
 		}
@@ -953,14 +953,14 @@ export class QuadrantColumnComponent extends Component {
 	// Method to get quadrant-specific styling or behavior
 	public getQuadrantColor(): string {
 		switch (this.quadrant.id) {
-			case "urgent-important":
-				return "var(--text-error)"; // Error color - Crisis
-			case "not-urgent-important":
-				return "var(--color-accent)"; // Accent color - Growth
-			case "urgent-not-important":
-				return "var(--text-warning)"; // Warning color - Caution
-			case "not-urgent-not-important":
-				return "var(--text-muted)"; // Muted color - Eliminate
+			case "important-large":
+				return "var(--text-error)"; // Error color - big important
+			case "important-small":
+				return "var(--color-accent)"; // Accent color - quick wins
+			case "not-important-large":
+				return "var(--text-warning)"; // Warning color - big low-priority
+			case "not-important-small":
+				return "var(--text-muted)"; // Muted color - trivial
 			default:
 				return "var(--color-accent)"; // Accent color - Default
 		}
@@ -969,21 +969,21 @@ export class QuadrantColumnComponent extends Component {
 	// Method to get quadrant recommendations
 	public getQuadrantRecommendation(): string {
 		switch (this.quadrant.id) {
-			case "urgent-important":
+			case "important-large":
 				return t(
-					"Handle immediately. These are critical tasks that need your attention now."
+					"Focus and plan. These are high-priority tasks that need real effort."
 				);
-			case "not-urgent-important":
+			case "important-small":
 				return t(
-					"Schedule and plan. These tasks are key to your long-term success."
+					"Knock these out. High-priority quick wins you can finish fast."
 				);
-			case "urgent-not-important":
+			case "not-important-large":
 				return t(
-					"Delegate if possible. These tasks are urgent but don't require your specific skills."
+					"Reconsider. Big effort for low-priority work - defer or delegate."
 				);
-			case "not-urgent-not-important":
+			case "not-important-small":
 				return t(
-					"Eliminate or minimize. These tasks may be time wasters."
+					"Batch or minimize. Small low-priority tasks for spare moments."
 				);
 			default:
 				return t("Review and categorize these tasks appropriately.");

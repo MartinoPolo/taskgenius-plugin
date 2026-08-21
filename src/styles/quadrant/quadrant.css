@@ -183,7 +183,7 @@
 }
 
 /* Quadrant Specific Styling - Subtle accent bars */
-.quadrant-urgent-important .tg-quadrant-header::before {
+.quadrant-important-large .tg-quadrant-header::before {
 	content: "";
 	position: absolute;
 	top: 0;
@@ -194,7 +194,7 @@
 	opacity: 0.6;
 }
 
-.quadrant-not-urgent-important .tg-quadrant-header::before {
+.quadrant-important-small .tg-quadrant-header::before {
 	content: "";
 	position: absolute;
 	top: 0;
@@ -205,7 +205,7 @@
 	opacity: 0.6;
 }
 
-.quadrant-urgent-not-important .tg-quadrant-header::before {
+.quadrant-not-important-large .tg-quadrant-header::before {
 	content: "";
 	position: absolute;
 	top: 0;
@@ -216,7 +216,7 @@
 	opacity: 0.6;
 }
 
-.quadrant-not-urgent-not-important .tg-quadrant-header::before {
+.quadrant-not-important-small .tg-quadrant-header::before {
 	content: "";
 	position: absolute;
 	top: 0;
@@ -341,13 +341,7 @@
 	color: var(--text-normal);
 }
 
-.tg-quadrant-tag--urgent {
-	background: var(--background-modifier-error);
-	color: var(--text-error);
-	border-color: var(--text-error);
-}
-
-.tg-quadrant-tag--important {
+.tg-quadrant-tag--quick {
 	background: var(--background-modifier-accent);
 	color: var(--text-accent);
 	border-color: var(--color-accent);

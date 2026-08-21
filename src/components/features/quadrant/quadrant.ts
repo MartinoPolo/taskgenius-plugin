@@ -20,49 +20,54 @@ export interface QuadrantSortOption {
 	label: string;
 }
 
-// 四象限定义
+// Matrix quadrant definition (Important x Size axes)
 export interface QuadrantDefinition {
 	id: string;
 	title: string;
 	description: string;
 	priorityEmoji: string;
-	urgentTag?: string; // 紧急任务标签
-	importantTag?: string; // 重要任务标签
+	// Target state a card takes when dropped into this quadrant.
+	important: boolean; // importance driven by task priority (high/highest)
+	small: boolean; // size driven by the #quick marker
 	className: string;
 }
 
 export const QUADRANT_DEFINITIONS: QuadrantDefinition[] = [
 	{
-		id: "urgent-important",
-		title: t("Urgent & Important"),
-		description: t("Do First - Crisis & emergencies"),
-		priorityEmoji: "🔺", // Highest priority
-		urgentTag: "#urgent",
-		importantTag: "#important",
-		className: "quadrant-urgent-important",
+		id: "important-large",
+		title: t("Important & Large"),
+		description: t("High priority, substantial effort"),
+		priorityEmoji: "🔺",
+		important: true,
+		small: false,
+		className: "quadrant-important-large",
 	},
 	{
-		id: "not-urgent-important",
-		title: t("Not Urgent & Important"),
-		description: t("Schedule - Planning & development"),
-		priorityEmoji: "⏫", // High priority
-		importantTag: "#important",
-		className: "quadrant-not-urgent-important",
+		id: "important-small",
+		title: t("Important & Small"),
+		description: t("High priority, quick wins"),
+		priorityEmoji: "⚡",
+		important: true,
+		small: true,
+		className: "quadrant-important-small",
 	},
 	{
-		id: "urgent-not-important",
-		title: t("Urgent & Not Important"),
-		description: t("Delegate - Interruptions & distractions"),
-		priorityEmoji: "🔼", // Medium priority
-		urgentTag: "#urgent",
-		className: "quadrant-urgent-not-important",
+		id: "not-important-large",
+		title: t("Not Important & Large"),
+		description: t("Low priority, substantial effort"),
+		priorityEmoji: "📦",
+		important: false,
+		small: false,
+		className: "quadrant-not-important-large",
 	},
 	{
-		id: "not-urgent-not-important",
-		title: t("Not Urgent & Not Important"),
-		description: t("Eliminate - Time wasters"),
-		priorityEmoji: "🔽", // Low priority
-		className: "quadrant-not-urgent-not-important",
+		id: "not-important-small",
+		title: t("Not Important & Small"),
+		description: t("Low priority, quick wins"),
+		priorityEmoji: "🍃",
+		important: false,
+		small: true,
+		className: "quadrant-not-important-small",
 	},
 ];
 
@@ -428,8 +433,7 @@ export class QuadrantComponent extends Component {
 					);
 					await this.updateTaskQuadrant(
 						taskId,
-						targetQuadrant,
-						actualSourceQuadrant
+						targetQuadrant
 					);
 				} else if (event.oldIndex !== event.newIndex) {
 					// Handle reordering within the same quadrant
@@ -444,84 +448,51 @@ export class QuadrantComponent extends Component {
 
 	private async updateTaskQuadrant(
 		taskId: string,
-		quadrant: QuadrantDefinition,
-		sourceQuadrant?: QuadrantDefinition
+		quadrant: QuadrantDefinition
 	) {
 		const task = this.tasks.find((t) => t.id === taskId);
 		if (!task) return;
 
 		try {
 			// Create a copy of the task for modification
-			const updatedTask = { ...task };
+			const updatedTask = { ...task, metadata: { ...task.metadata } };
 
 			// Ensure metadata exists
 			if (!updatedTask.metadata) {
 				updatedTask.metadata = {
 					tags: [],
 					children: [],
-				};
+				} as any;
 			}
 
-			// Update tags in metadata
-			const updatedTags = [...(updatedTask.metadata.tags || [])];
-
-			// Get tag names to remove (from source quadrant if provided, otherwise from config)
-			const tagsToRemove: string[] = [];
-
-			if (sourceQuadrant) {
-				// Remove tags from source quadrant (keep # prefix since metadata.tags includes #)
-				if (sourceQuadrant.urgentTag) {
-					tagsToRemove.push(sourceQuadrant.urgentTag);
-				}
-				if (sourceQuadrant.importantTag) {
-					tagsToRemove.push(sourceQuadrant.importantTag);
-				}
+			// Size axis: the #quick tag marks a task as Small. Moving into a Small
+			// quadrant adds it; moving into a Large quadrant removes it (default
+			// with no size marker is Large).
+			const currentTags = [...(updatedTask.metadata.tags || [])];
+			let updatedTags: string[];
+			if (quadrant.small) {
+				updatedTags = currentTags.some(
+					(tag) => tag.toLowerCase() === "#quick"
+				)
+					? currentTags
+					: [...currentTags, "#quick"];
 			} else {
-				// Fallback: remove all urgent/important tags from config
-				const urgentTag = this.quadrantConfig.urgentTag || "#urgent";
-				const importantTag =
-					this.quadrantConfig.importantTag || "#important";
-				tagsToRemove.push(urgentTag);
-				tagsToRemove.push(importantTag);
+				updatedTags = currentTags.filter(
+					(tag) => tag.toLowerCase() !== "#quick"
+				);
 			}
+			updatedTask.metadata.tags = updatedTags;
 
-			// Remove existing urgent/important tags
-			const filteredTags = updatedTags.filter(
-				(tag) => !tagsToRemove.includes(tag)
-			);
-
-			// Add new tags based on target quadrant (keep # prefix since metadata.tags includes #)
-			if (quadrant.urgentTag) {
-				if (!filteredTags.includes(quadrant.urgentTag)) {
-					filteredTags.push(quadrant.urgentTag);
+			// Importance axis: importance is driven by priority. Moving into an
+			// Important quadrant raises priority to high (unless already >= high);
+			// moving into a Not-Important quadrant drops it below high.
+			const currentPriority = this.getTaskPriorityValue(task);
+			if (quadrant.important) {
+				if (currentPriority < 4) {
+					updatedTask.metadata.priority = 4; // High
 				}
-			}
-			if (quadrant.importantTag) {
-				if (!filteredTags.includes(quadrant.importantTag)) {
-					filteredTags.push(quadrant.importantTag);
-				}
-			}
-
-			// Update tags in metadata
-			updatedTask.metadata.tags = filteredTags;
-
-			// Only update priority if using priority-based classification
-			if (this.quadrantConfig.usePriorityForClassification) {
-				// Update priority based on quadrant
-				switch (quadrant.id) {
-					case "urgent-important":
-						updatedTask.metadata.priority = 5; // Highest
-						break;
-					case "not-urgent-important":
-						updatedTask.metadata.priority = 4; // High
-						break;
-					case "urgent-not-important":
-						updatedTask.metadata.priority = 3; // Medium
-						break;
-					case "not-urgent-not-important":
-						updatedTask.metadata.priority = 2; // Low
-						break;
-				}
+			} else if (currentPriority >= 4) {
+				updatedTask.metadata.priority = 3; // Medium (below high)
 			}
 
 			// Store quadrant information in metadata using custom fields
@@ -589,92 +560,44 @@ export class QuadrantComponent extends Component {
 	}
 
 	private determineTaskQuadrant(task: Task): string {
-		let isUrgent = false;
-		let isImportant = false;
+		const important = this.isTaskImportant(task);
+		const small = this.isTaskSmall(task);
 
-		if (this.quadrantConfig.usePriorityForClassification) {
-			// Use priority-based classification
-			const priority = task.metadata?.priority || 0;
-			const urgentThreshold =
-				this.quadrantConfig.urgentPriorityThreshold || 4;
-			const importantThreshold =
-				this.quadrantConfig.importantPriorityThreshold || 3;
-
-			isUrgent = priority >= urgentThreshold;
-			isImportant = priority >= importantThreshold;
+		if (important && !small) {
+			return "important-large";
+		} else if (important && small) {
+			return "important-small";
+		} else if (!important && !small) {
+			return "not-important-large";
 		} else {
-			// Use tag-based classification
-			const content = task.content.toLowerCase();
-			const tags = task.metadata?.tags || [];
-
-			// Check urgency: explicit tags, priority level (4-5), or due date
-			const urgentTag = (
-				this.quadrantConfig.urgentTag || "#urgent"
-			).toLowerCase();
-			const isUrgentByTag =
-				content.includes(urgentTag) || tags.includes(urgentTag);
-			const isUrgentByOtherCriteria = this.isTaskUrgent(task);
-			isUrgent = isUrgentByTag || isUrgentByOtherCriteria;
-
-			// Check importance: explicit tags, priority level (3-5), or important keywords
-			const importantTag = (
-				this.quadrantConfig.importantTag || "#important"
-			).toLowerCase();
-			const isImportantByTag =
-				content.includes(importantTag) || tags.includes(importantTag);
-			const isImportantByOtherCriteria = this.isTaskImportant(task);
-			isImportant = isImportantByTag || isImportantByOtherCriteria;
-		}
-
-		if (isUrgent && isImportant) {
-			return "urgent-important";
-		} else if (!isUrgent && isImportant) {
-			return "not-urgent-important";
-		} else if (isUrgent && !isImportant) {
-			return "urgent-not-important";
-		} else {
-			return "not-urgent-not-important";
+			return "not-important-small";
 		}
 	}
 
-	private isTaskUrgent(task: Task): boolean {
-		// Check if task has high priority emojis or due date is soon
-		const hasHighPriority = /[🔺⏫]/.test(task.content);
-
-		// Check numeric priority - higher values (4-5) indicate urgent tasks
-		const hasHighNumericPriority =
-			task.metadata?.priority && task.metadata.priority >= 4;
-
-		// Use configured threshold for urgent due dates
-		const urgentThresholdMs =
-			(this.quadrantConfig.urgentThresholdDays || 3) *
-			24 *
-			60 *
-			60 *
-			1000;
-		const hasSoonDueDate =
-			task.metadata?.dueDate &&
-			task.metadata.dueDate <= Date.now() + urgentThresholdMs;
-
-		return hasHighPriority || hasHighNumericPriority || !!hasSoonDueDate;
-	}
-
+	/**
+	 * Important = highest or high priority only (numeric priority >= 4).
+	 * Due-date / keyword / urgency heuristics are intentionally excluded.
+	 */
 	private isTaskImportant(task: Task): boolean {
-		// Check if task has medium-high priority or is part of important projects
-		const hasMediumHighPriority = /[🔺⏫🔼]/.test(task.content);
+		return this.getTaskPriorityValue(task) >= 4;
+	}
 
-		// Check numeric priority - higher values (3-5) indicate important tasks
-		const hasImportantNumericPriority =
-			task.metadata?.priority && task.metadata.priority >= 3;
-
-		// Could also check for important project tags or keywords
-		const hasImportantKeywords =
-			/\b(goal|project|milestone|strategic)\b/i.test(task.content);
-
-		return (
-			hasMediumHighPriority ||
-			hasImportantNumericPriority ||
-			hasImportantKeywords
+	/**
+	 * Small = the task carries a #quick marker (as a tag or inline in the
+	 * content) OR belongs to a heading containing "quick". Everything else
+	 * (including #big or no size marker) is Large.
+	 */
+	private isTaskSmall(task: Task): boolean {
+		const tags = task.metadata?.tags || [];
+		if (tags.some((tag) => tag.toLowerCase() === "#quick")) {
+			return true;
+		}
+		if (/#quick\b/i.test(task.content || "")) {
+			return true;
+		}
+		const headings = task.metadata?.heading || [];
+		return headings.some((heading) =>
+			heading.toLowerCase().includes("quick")
 		);
 	}
 
