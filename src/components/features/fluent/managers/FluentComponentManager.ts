@@ -1216,8 +1216,16 @@ export class FluentComponentManager extends Component {
 			return ["list", "tree", "kanban", "calendar"];
 		}
 
-		// Return the configured modes for the view, or empty array
-		return VIEW_MODE_CONFIG[viewId] || [];
+		// Built-in views have an explicit entry in the map (possibly empty on purpose).
+		if (viewId in VIEW_MODE_CONFIG) {
+			return VIEW_MODE_CONFIG[viewId];
+		}
+
+		// Custom views (config type === "custom", or any id not covered above) are
+		// rendered through ContentComponent, so they support list/tree. Returning a
+		// non-empty list keeps FluentTopNavigation from hiding the secondary toolbar
+		// (view-mode tabs + Group By) for these views.
+		return ["list", "tree"];
 	}
 
 	/**
