@@ -1,4 +1,11 @@
-import { App, Component, MarkdownRenderer, Menu, TFile } from "obsidian";
+import {
+	App,
+	Component,
+	Keymap,
+	MarkdownRenderer,
+	Menu,
+	TFile,
+} from "obsidian";
 import { Task } from "@/types/task"; // Adjust path
 import { MarkdownRendererComponent } from "@/components/ui/renderers/MarkdownRenderer"; // Adjust path
 import TaskProgressBarPlugin from "@/index"; // Adjust path
@@ -110,6 +117,29 @@ export class KanbanCardComponent extends Component {
 		this.registerDomEvent(this.element, "contextmenu", (event) => {
 			this.params.onTaskContextMenu?.(event, this.task);
 		});
+
+		// --- Ctrl/Cmd+click jumps to the task's source note ---
+		// A plain click is left untouched so SortableJS dragging and other
+		// handlers keep working; only a modifier click navigates to the source.
+		this.registerDomEvent(this.element, "click", async (event) => {
+			if (Keymap.isModEvent(event)) {
+				event.preventDefault();
+				event.stopPropagation();
+				await this.openTaskInFile();
+			}
+		});
+	}
+
+	private async openTaskInFile() {
+		const file = this.app.vault.getFileByPath(this.task.filePath);
+		if (file instanceof TFile) {
+			const leaf = this.app.workspace.getLeaf(false);
+			await leaf.openFile(file, {
+				eState: {
+					line: this.task.line,
+				},
+			});
+		}
 	}
 
 	override onunload(): void {
