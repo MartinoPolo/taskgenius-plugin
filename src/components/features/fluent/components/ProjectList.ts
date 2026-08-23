@@ -273,9 +273,21 @@ export class ProjectList extends Component {
 						a.displayName || a.name,
 					);
 				case "tasks-asc":
-					return a.taskCount - b.taskCount;
+					return (
+						a.openCount - b.openCount ||
+						this.collator.compare(
+							a.displayName || a.name,
+							b.displayName || b.name,
+						)
+					);
 				case "tasks-desc":
-					return b.taskCount - a.taskCount;
+					return (
+						b.openCount - a.openCount ||
+						this.collator.compare(
+							a.displayName || a.name,
+							b.displayName || b.name,
+						)
+					);
 				case "created-asc":
 					return (a.createdAt || 0) - (b.createdAt || 0);
 				case "created-desc":
@@ -421,9 +433,21 @@ export class ProjectList extends Component {
 						a.project.displayName || a.project.name,
 					);
 				case "tasks-asc":
-					return a.project.taskCount - b.project.taskCount;
+					return (
+						a.project.openCount - b.project.openCount ||
+						this.collator.compare(
+							a.project.displayName || a.project.name,
+							b.project.displayName || b.project.name,
+						)
+					);
 				case "tasks-desc":
-					return b.project.taskCount - a.project.taskCount;
+					return (
+						b.project.openCount - a.project.openCount ||
+						this.collator.compare(
+							a.project.displayName || a.project.name,
+							b.project.displayName || b.project.name,
+						)
+					);
 				case "created-asc":
 					return (
 						(a.project.createdAt || 0) - (b.project.createdAt || 0)
