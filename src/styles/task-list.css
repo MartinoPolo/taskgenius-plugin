@@ -8,12 +8,10 @@
 .task-item {
 	display: flex;
 	align-items: center;
-	padding: 8px 16px;
-	/* border-bottom: 1px solid var(--background-modifier-border); */
+	padding: var(--size-2-2) var(--size-4-2);
 	cursor: pointer;
-	gap: var(--size-2-3);
-
-	min-height: 40px;
+	gap: var(--size-2-2);
+	min-height: 30px;
 }
 
 .task-item:hover {
@@ -58,17 +56,42 @@
 
 .task-item-content {
 	flex: 1;
+	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	width: 100%;
 }
 
 .task-item-container {
 	flex: 1;
+	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.task-item-main {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	min-width: 0;
+	gap: var(--size-2-1);
+}
+
+.task-item-leading-metadata,
+.task-item-actions {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	gap: var(--size-2-1);
+}
+
+.task-item-leading-metadata:empty {
+	display: none;
+}
+
+.task-item-actions {
+	margin-left: auto;
 }
 
 /* Dynamic content-metadata container */
@@ -98,25 +121,35 @@
 	margin-top: 0;
 }
 
-/* Multi-line content layout - vertical */
+/* Multi-line content layout */
 .task-content-metadata-container.multi-line-content {
-	flex-direction: column;
-	align-items: flex-start;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
 }
 
-.task-content-metadata-container.multi-line-content .task-item-content {
-	/* width: 100%; */
+.task-content-metadata-container.multi-line-content .task-item-main {
+	grid-column: 1;
+	grid-row: 1;
+	width: 100%;
+}
+
+.task-content-metadata-container.multi-line-content .task-item-actions {
+	grid-column: 2;
+	grid-row: 1;
 }
 
 .task-content-metadata-container.multi-line-content .task-item-metadata {
-	margin-top: var(--size-2-2);
+	grid-column: 1 / -1;
+	grid-row: 2;
+	margin-top: var(--size-2-1);
 }
 
 .task-item-metadata {
 	display: flex;
 	align-items: center;
-	gap: var(--size-4-2);
-	margin-top: var(--size-2-2);
+	gap: var(--size-2-2);
+	margin-top: var(--size-2-1);
 }
 
 .task-item-metadata:empty {
@@ -201,7 +234,7 @@
 	color: var(--text-on-accent);
 	background-color: var(--color-accent);
 	border-radius: var(--radius-s);
-	padding: var(--size-2-1) var(--size-2-3);
+	padding: var(--size-2-1) var(--size-2-2);
 	white-space: nowrap;
 	opacity: 0.5;
 }
@@ -217,7 +250,7 @@
 
 .task-project::before {
 	content: "🗂️";
-	margin-right: var(--size-4-2);
+	margin-right: var(--size-2-1);
 
 	display: inline-flex;
 	align-items: center;
@@ -232,7 +265,8 @@
 }
 
 .task-priority {
-	margin-left: 8px;
+	margin-left: var(--size-2-1);
+	padding: 0 var(--size-2-1);
 	font-size: 0.9em;
 	white-space: nowrap;
 }
@@ -270,9 +304,8 @@
 	justify-content: center;
 	width: 20px;
 	height: 20px;
-	margin-left: 4px;
+	margin-left: 0;
 	padding: 0;
-	/* border: 1px dashed var(--text-muted); */
 	border-radius: 3px;
 	background: transparent;
 	color: var(--text-muted);
@@ -287,17 +320,6 @@
 	background: var(--background-modifier-hover);
 }
 
-.task-item.tree-task-item .task-priority-clickable,
-.task-item.tree-task-item .add-priority-btn {
-	position: absolute;
-	right: var(--size-4-2);
-	/* Vertically center within the parent's OWN row, not the whole subtree.
-	   The anchor is .task-parent-container (position:relative in tree-view.css),
-	   whose height is just the parent line — so centering here can't push the icon
-	   down into the children the way anchoring to .tree-task-item did. */
-	top: 50%;
-	transform: translateY(-50%);
-}
 
 /* New field styles */
 .task-oncompletion {
@@ -354,7 +376,7 @@
 .task-tags-container {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--size-2-2);
+	gap: var(--size-2-1);
 }
 
 .task-tags-container:empty {
@@ -366,7 +388,7 @@
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 	border-radius: var(--radius-s);
-	padding: var(--size-2-1) var(--size-2-3);
+	padding: var(--size-2-1) var(--size-2-2);
 	white-space: nowrap;
 	opacity: 0.75;
 }

@@ -22,6 +22,22 @@ export function coalescePriority(raw: unknown): number {
 	return NO_PRIORITY_SORT_VALUE;
 }
 
+export function normalizePriorityForDisplay(raw: string | number): number {
+	const namedPriorities: Record<string, number> = {
+		lowest: 1,
+		low: 2,
+		medium: 3,
+		high: 4,
+		highest: 5,
+	};
+	const parsed =
+		typeof raw === "number"
+			? raw
+			: namedPriorities[raw.toLowerCase()] ?? Number.parseInt(raw, 10);
+	if (!Number.isFinite(parsed)) return 1;
+	return Math.max(1, Math.min(5, Math.round(parsed)));
+}
+
 /**
  * Sanitizes a priority value to make it safe for use in CSS class names.
  * Removes spaces and special characters that are invalid in CSS tokens.

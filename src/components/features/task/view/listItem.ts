@@ -19,7 +19,7 @@ import TaskProgressBarPlugin from "@/index";
 import { TaskProgressBarSettings } from "@/common/setting-definition";
 import { InlineEditor, InlineEditorOptions } from "./InlineEditor";
 import { InlineEditorManager } from "./InlineEditorManager";
-import { sanitizePriorityForClass } from "@/utils/task/priority-utils";
+import { normalizePriorityForDisplay } from "@/utils/task/priority-utils";
 import { TaskSelectionManager } from "@/components/features/task/selection/TaskSelectionManager";
 import { showBulkOperationsMenu } from "./BulkOperationsMenu";
 import { TaskStatusIndicator } from "./TaskStatusIndicator";
@@ -38,8 +38,10 @@ export class TaskListItemComponent extends Component {
 	private containerEl: HTMLElement;
 	private contentEl: HTMLElement;
 	private contentMetadataContainer: HTMLElement;
+	private leadingMetadataEl: HTMLElement;
 
 	private metadataEl: HTMLElement;
+	private actionsEl: HTMLElement;
 
 	private statusIndicator: TaskStatusIndicator | null = null;
 	private checkboxInput: HTMLInputElement | null = null;
@@ -330,8 +332,15 @@ export class TaskListItemComponent extends Component {
 			cls: "task-content-metadata-container",
 		});
 
-		// Task content
-		this.contentEl = this.contentMetadataContainer.createDiv({
+		const mainEl = this.contentMetadataContainer.createDiv({
+			cls: "task-item-main",
+		});
+
+		this.leadingMetadataEl = mainEl.createDiv({
+			cls: "task-item-leading-metadata",
+		});
+
+		this.contentEl = mainEl.createDiv({
 			cls: "task-item-content",
 		});
 
@@ -344,84 +353,11 @@ export class TaskListItemComponent extends Component {
 			cls: "task-item-metadata",
 		});
 
+		this.actionsEl = this.contentMetadataContainer.createDiv({
+			cls: "task-item-actions",
+		});
+
 		this.renderMetadata();
-
-		const priorityValue = this.task.metadata.priority;
-
-		if (priorityValue) {
-			let numericPriority: number;
-			if (typeof priorityValue === "number") {
-				numericPriority = priorityValue;
-			} else {
-				switch (priorityValue) {
-					case "low":
-						numericPriority = 2;
-						break;
-					case "medium":
-						numericPriority = 3;
-						break;
-					case "high":
-						numericPriority = 4;
-						break;
-					case "highest":
-						numericPriority = 5;
-						break;
-					case "lowest":
-						numericPriority = 1;
-						break;
-					default:
-						numericPriority = parseInt(priorityValue, 10) || 1;
-						break;
-				}
-			}
-
-			const priorityConfig = TaskListItemComponent.PRIORITY_CONFIG.find(
-				(config) => config.value === numericPriority
-			);
-			const classes = ["task-priority"];
-			if (priorityConfig) {
-				classes.push(`priority-${priorityConfig.class}`);
-			}
-
-			if (this.plugin.settings.enableInlineEditor) {
-				classes.push("task-priority-clickable");
-			}
-
-			const priorityEl = createDiv({ cls: classes });
-			const icon = "!".repeat(numericPriority);
-			priorityEl.textContent = icon;
-
-			if (this.plugin.settings.enableInlineEditor) {
-				const priorityTooltip = t("Click to set priority");
-				priorityEl.setAttribute("aria-label", priorityTooltip);
-				// priorityEl.setAttribute("title", priorityTooltip);
-
-				this.registerDomEvent(priorityEl, "click", (e) => {
-					e.stopPropagation();
-					if (!this.isCurrentlyEditing()) {
-						this.showPriorityMenu(priorityEl);
-					}
-				});
-			}
-
-			this.element.appendChild(priorityEl);
-		} else if (this.plugin.settings.enableInlineEditor) {
-			const addPriorityBtn = this.element.createEl("div", {
-				cls: "add-priority-btn",
-				attr: {
-					"aria-label": t("Click to set priority"),
-					// title: t("Click to set priority"),
-					role: "button",
-				},
-			});
-
-			this.registerDomEvent(addPriorityBtn, "click", (e) => {
-				e.stopPropagation();
-				if (!this.isCurrentlyEditing()) {
-					this.showPriorityMenu(addPriorityBtn);
-				}
-			});
-		}
 
 		// Click handler to select task
 		this.registerDomEvent(this.element, "click", (e) => {
@@ -453,7 +389,9 @@ export class TaskListItemComponent extends Component {
 		// Clear timer element reference before re-rendering
 		this.timerEl = null;
 
+		this.leadingMetadataEl.empty();
 		this.metadataEl.empty();
+		this.actionsEl.empty();
 
 		// Working-on timer display: show elapsed time if timer exists
 		if (
@@ -520,12 +458,12 @@ export class TaskListItemComponent extends Component {
 			(this.task.metadata.project || this.task.metadata.tgProject) &&
 			this.viewMode !== "projects"
 		) {
-			this.renderProjectMetadata();
+			this.renderProjectMetadata(this.leadingMetadataEl);
 		}
 
 		// Tags if available
 		if (this.task.metadata.tags && this.task.metadata.tags.length > 0) {
-			this.renderTagsMetadata();
+			this.renderTagsMetadata(this.leadingMetadataEl);
 		}
 
 		// OnCompletion if available
@@ -547,7 +485,8 @@ export class TaskListItemComponent extends Component {
 		}
 
 		// Add metadata button for adding new metadata
-		this.renderAddMetadataButton();
+		this.renderAddMetadataButton(this.actionsEl);
+		this.renderPriorityAction(this.actionsEl);
 	}
 
 	private renderTimerMetadata() {
@@ -767,7 +706,7 @@ export class TaskListItemComponent extends Component {
 		}
 	}
 
-	private renderProjectMetadata() {
+	private renderProjectMetadata(containerEl: HTMLElement) {
 		// Determine which project to display: original project or tgProject
 		let projectName: string | undefined;
 		let isReadonly = false;
@@ -783,7 +722,7 @@ export class TaskListItemComponent extends Component {
 
 		if (!projectName) return;
 
-		const projectEl = this.metadataEl.createEl("div", {
+		const projectEl = containerEl.createEl("div", {
 			cls: "task-project",
 		});
 
@@ -812,8 +751,8 @@ export class TaskListItemComponent extends Component {
 		}
 	}
 
-	private renderTagsMetadata() {
-		const tagsContainer = this.metadataEl.createEl("div", {
+	private renderTagsMetadata(containerEl: HTMLElement) {
+		const tagsContainer = containerEl.createEl("div", {
 			cls: "task-tags-container",
 		});
 
@@ -929,13 +868,44 @@ export class TaskListItemComponent extends Component {
 		}
 	}
 
-	private renderAddMetadataButton() {
+	private renderPriorityAction(containerEl: HTMLElement) {
+		const priorityValue = this.task.metadata.priority;
+
+		if (priorityValue) {
+			const numericPriority = normalizePriorityForDisplay(priorityValue);
+			const classes = ["task-priority", `priority-${numericPriority}`];
+			if (this.plugin.settings.enableInlineEditor) {
+				classes.push("task-priority-clickable");
+			}
+
+			const priorityEl = containerEl.createDiv({ cls: classes });
+			priorityEl.textContent = "!".repeat(numericPriority);
+			if (this.plugin.settings.enableInlineEditor) {
+				priorityEl.setAttribute("aria-label", t("Click to set priority"));
+				this.registerDomEvent(priorityEl, "click", (e) => {
+					e.stopPropagation();
+					if (!this.isCurrentlyEditing()) this.showPriorityMenu(priorityEl);
+				});
+			}
+		} else if (this.plugin.settings.enableInlineEditor) {
+			const addPriorityBtn = containerEl.createDiv({
+				cls: "add-priority-btn",
+				attr: { "aria-label": t("Click to set priority"), role: "button" },
+			});
+			this.registerDomEvent(addPriorityBtn, "click", (e) => {
+				e.stopPropagation();
+				if (!this.isCurrentlyEditing()) this.showPriorityMenu(addPriorityBtn);
+			});
+		}
+	}
+
+	private renderAddMetadataButton(containerEl: HTMLElement) {
 		// Only show add metadata button if inline editor is enabled
 		if (!this.plugin.settings.enableInlineEditor) {
 			return;
 		}
 
-		const addButtonContainer = this.metadataEl.createDiv({
+		const addButtonContainer = containerEl.createDiv({
 			cls: "add-metadata-container",
 		});
 

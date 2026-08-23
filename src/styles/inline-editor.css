@@ -155,19 +155,25 @@
 	box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
-/* Add Metadata Button - More subtle */
+/* Add Metadata Button */
 .add-metadata-container {
 	display: inline-flex;
 	align-items: center;
-	margin-left: 4px;
+	width: 22px;
+	min-width: 22px;
 }
 
-.task-list .task-item:not(.tree-task-item):hover .add-metadata-btn {
+.task-list
+	.task-item:not(.tree-task-item):hover
+	.task-item-actions
+	.add-metadata-btn,
+.tree-task-item
+	> .task-parent-container:hover
+	.task-item-actions
+	.add-metadata-btn,
+.add-metadata-btn:focus-visible {
 	opacity: 1;
-}
-
-.tree-task-item .task-item-container:hover .add-metadata-btn {
-	opacity: 1;
+	pointer-events: auto;
 }
 
 .add-metadata-btn {
@@ -184,6 +190,7 @@
 	transition: all 0.15s ease;
 	--icon-size: 10px;
 	opacity: 0;
+	pointer-events: none;
 	padding: 0;
 	margin: 0;
 }

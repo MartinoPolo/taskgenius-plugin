@@ -2,17 +2,16 @@
 
 /* Tree item container */
 .tree-task-item {
-	position: relative;
 	display: flex;
 	flex-direction: column;
-	padding: 8px 16px;
+	padding: var(--size-2-2) var(--size-4-2);
 	transition: background-color 0.2s ease;
 }
 
 .task-children-container .task-item.tree-task-item {
 	border-bottom: unset;
-	padding-top: var(--size-2-2);
-	padding-bottom: var(--size-2-2);
+	padding-top: var(--size-2-1);
+	padding-bottom: var(--size-2-1);
 	gap: 0;
 }
 
@@ -37,10 +36,7 @@
 	width: 100%;
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	/* Anchor the absolutely-positioned priority icon to THIS row (the parent's own
-	   line) rather than to .tree-task-item, whose box spans the whole subtree. */
-	position: relative;
+	gap: var(--size-2-1);
 }
 
 /* Indentation for hierarchy */
@@ -48,14 +44,11 @@
 	flex-shrink: 0;
 }
 
-/* Childless tree rows omit the .task-expand-toggle element entirely, which would
-   shift their checkbox left by the toggle's width plus the row gap. Reserve that
-   gutter on rows without a toggle so every checkbox column-aligns regardless of
-   whether the row has children. Toggle width (16px) + row flex gap (6px). */
+/* Reserve the toggle gutter so nested checkbox columns stay aligned. */
 .task-item.tree-task-item
 	> div:first-of-type:not(:has(> .task-expand-toggle))
 	.task-checkbox {
-	margin-left: calc(16px + 6px);
+	margin-left: calc(16px + var(--size-2-1));
 }
 
 /* Expand/collapse toggle */
@@ -134,29 +127,41 @@
 	margin-top: 0;
 }
 
-/* Multi-line content layout - vertical */
+/* Multi-line content layout */
 .tree-task-item .task-content-metadata-container.multi-line-content {
-	flex-direction: column;
-	align-items: flex-start;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
 }
 
 .tree-task-item
 	.task-content-metadata-container.multi-line-content
-	.task-item-content {
+	.task-item-main {
+	grid-column: 1;
+	grid-row: 1;
 	width: 100%;
 }
 
 .tree-task-item
 	.task-content-metadata-container.multi-line-content
+	.task-item-actions {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.tree-task-item
+	.task-content-metadata-container.multi-line-content
 	.task-metadata {
-	margin-top: 4px;
+	grid-column: 1 / -1;
+	grid-row: 2;
+	margin-top: var(--size-2-1);
 }
 
 /* Task metadata */
 .task-metadata {
 	display: flex;
-	gap: 8px;
-	margin-top: 4px;
+	gap: var(--size-2-2);
+	margin-top: var(--size-2-1);
 	font-size: 0.85em;
 	color: var(--text-muted);
 }
@@ -172,7 +177,7 @@
 
 .task-item.tree-task-item .task-project {
 	display: inline-block;
-	padding: 1px 6px;
+	padding: 1px var(--size-2-2);
 	border-radius: 4px;
 }
 
@@ -250,8 +255,7 @@
 
 /* Children container */
 .task-children-container {
-	/* margin-left: 20px; */
-	margin-top: 4px;
+	margin-top: var(--size-2-1);
 	width: 100%;
 }
 
